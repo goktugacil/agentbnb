@@ -1,151 +1,99 @@
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "Collecting flask\n",
-      "  Downloading flask-3.1.0-py3-none-any.whl.metadata (2.7 kB)\n",
-      "Requirement already satisfied: requests in ./Library/jupyterlab-desktop/jlab_server/lib/python3.12/site-packages (2.32.3)\n",
-      "Collecting Werkzeug>=3.1 (from flask)\n",
-      "  Downloading werkzeug-3.1.3-py3-none-any.whl.metadata (3.7 kB)\n",
-      "Requirement already satisfied: Jinja2>=3.1.2 in ./Library/jupyterlab-desktop/jlab_server/lib/python3.12/site-packages (from flask) (3.1.4)\n",
-      "Collecting itsdangerous>=2.2 (from flask)\n",
-      "  Using cached itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)\n",
-      "Collecting click>=8.1.3 (from flask)\n",
-      "  Using cached click-8.1.8-py3-none-any.whl.metadata (2.3 kB)\n",
-      "Collecting blinker>=1.9 (from flask)\n",
-      "  Using cached blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)\n",
-      "Requirement already satisfied: charset-normalizer<4,>=2 in ./Library/jupyterlab-desktop/jlab_server/lib/python3.12/site-packages (from requests) (3.3.2)\n",
-      "Requirement already satisfied: idna<4,>=2.5 in ./Library/jupyterlab-desktop/jlab_server/lib/python3.12/site-packages (from requests) (3.8)\n",
-      "Requirement already satisfied: urllib3<3,>=1.21.1 in ./Library/jupyterlab-desktop/jlab_server/lib/python3.12/site-packages (from requests) (2.2.2)\n",
-      "Requirement already satisfied: certifi>=2017.4.17 in ./Library/jupyterlab-desktop/jlab_server/lib/python3.12/site-packages (from requests) (2024.7.4)\n",
-      "Requirement already satisfied: MarkupSafe>=2.0 in ./Library/jupyterlab-desktop/jlab_server/lib/python3.12/site-packages (from Jinja2>=3.1.2->flask) (2.1.5)\n",
-      "Downloading flask-3.1.0-py3-none-any.whl (102 kB)\n",
-      "Using cached blinker-1.9.0-py3-none-any.whl (8.5 kB)\n",
-      "Using cached click-8.1.8-py3-none-any.whl (98 kB)\n",
-      "Using cached itsdangerous-2.2.0-py3-none-any.whl (16 kB)\n",
-      "Downloading werkzeug-3.1.3-py3-none-any.whl (224 kB)\n",
-      "Installing collected packages: Werkzeug, itsdangerous, click, blinker, flask\n",
-      "Successfully installed Werkzeug-3.1.3 blinker-1.9.0 click-8.1.8 flask-3.1.0 itsdangerous-2.2.0\n",
-      "Note: you may need to restart the kernel to use updated packages.\n"
-     ]
-    }
-   ],
-   "source": [
-    "pip install flask requests"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "4813e88e-1196-4f4e-8d10-50b518c47581",
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      " * Serving Flask app '__main__'\n",
-      " * Debug mode: off\n"
-     ]
-    },
-    {
-     "name": "stderr",
-     "output_type": "stream",
-     "text": [
-      "WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.\n",
-      " * Running on all addresses (0.0.0.0)\n",
-      " * Running on http://127.0.0.1:5001\n",
-      " * Running on http://192.168.1.116:5001\n",
-      "Press CTRL+C to quit\n"
-     ]
-    }
-   ],
-   "source": [
-    "from flask import Flask, request, jsonify\n",
-    "import requests\n",
-    "\n",
-    "app = Flask(__name__)\n",
-    "\n",
-    "AIRTABLE_API_KEY = 'patKSNNIqaRvCSVQd.bfe0ec81c349def3482c6c527f255e76ee121d85e9c3850b5b2b7c06cc5bbc4f'\n",
-    "AIRTABLE_BASE_ID = 'appmdEYMPfmYmjqTl'\n",
-    "AIRTABLE_TABLE_NAME = 'Sayfa1'\n",
-    "\n",
-    "@app.route('/get_property', methods=['GET'])\n",
-    "def get_property():\n",
-    "    property_id = request.args.get('id')\n",
-    "\n",
-    "    if not property_id:\n",
-    "        return jsonify({\"error\": \"ID parametresi eksik\"}), 400\n",
-    "\n",
-    "    url = f\"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}\"\n",
-    "    headers = {\n",
-    "        \"Authorization\": f\"Bearer {AIRTABLE_API_KEY}\"\n",
-    "    }\n",
-    "    params = {\n",
-    "        \"filterByFormula\": f\"{{id}}='{property_id}'\"\n",
-    "    }\n",
-    "\n",
-    "    response = requests.get(url, headers=headers, params=params)\n",
-    "\n",
-    "    if response.status_code != 200:\n",
-    "        return jsonify({\"error\": f\"Airtable Hatası: {response.status_code}\", \"details\": response.text}), 500\n",
-    "\n",
-    "    airtable_data = response.json()\n",
-    "\n",
-    "    if len(airtable_data.get('records', [])) == 0:\n",
-    "        return jsonify({\"error\": \"Bu ID ile eşleşen bir ev bulunamadı.\"}), 404\n",
-    "\n",
-    "    fields = airtable_data['records'][0]['fields']\n",
-    "\n",
-    "    return jsonify({\n",
-    "        \"district\": fields.get(\"district\"),\n",
-    "        \"accommodates\": fields.get(\"accommodates\"),\n",
-    "        \"bedrooms\": fields.get(\"bedrooms\"),\n",
-    "        \"bathrooms\": fields.get(\"bathrooms\"),\n",
-    "        \"predicted_price\": fields.get(\"predicted_price\"),\n",
-    "        \"predicted_superhost\": fields.get(\"predicted_superhost\")\n",
-    "    })\n",
-    "\n",
-    "if __name__ == '__main__':\n",
-    "    app.run(host='0.0.0.0', port=5001)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0892a6dc-4f6a-4d4c-9831-4f8a4b36d146",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "print(os.path.abspath(__file__))"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "id": "5680e32e-c43c-4afa-84bb-66245ef99102",
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3 (ipykernel)",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.12.5"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+from flask import Flask, request, jsonify
+import pandas as pd
+import joblib
+import numpy as np
+import math
+
+app = Flask(__name__)
+
+GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQtk-7eRprKONHH1LONCddSowpZ85UOnlyYlpA3F5uNiSdU0IgiiacjQuRCY3wGuddbk7ePltMhc00G/pub?gid=1740703900&single=true&output=csv'
+
+model = joblib.load('price_model.pkl')
+df = pd.read_csv(GOOGLE_SHEETS_CSV_URL)
+model_features = model.get_booster().feature_names
+
+if 'id' not in df.columns:
+    df.reset_index(inplace=True)
+    df.rename(columns={'index': 'id'}, inplace=True)
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    return R * c
+
+@app.route('/get_property', methods=['GET'])
+def get_property():
+    try:
+        property_id = request.args.get('id', type=int)
+        if property_id is None:
+            return jsonify({'error': 'Geçerli bir id parametresi sağlayın.'}), 400
+
+        property_data = df[df['id'] == property_id]
+        if property_data.empty:
+            return jsonify({'error': 'Bu ID ile eşleşen bir kayıt bulunamadı.'}), 404
+
+        features = property_data.drop(columns=['id', 'price'], errors='ignore')
+        for col in model_features:
+            if col not in features.columns:
+                features[col] = 0
+        features = features[model_features]
+        features = features.apply(pd.to_numeric, errors='coerce')
+
+        prediction = model.predict(features)[0]
+
+        lat, lon = float(property_data['latitude']), float(property_data['longitude'])
+        accommodates = int(property_data['accommodates'])
+
+        nearby_properties = df.copy()
+        nearby_properties['distance'] = df.apply(lambda row: haversine(lat, lon, row['latitude'], row['longitude']), axis=1)
+        competitors = nearby_properties[(nearby_properties['distance'] <= 5) &
+                                        (abs(nearby_properties['accommodates'] - accommodates) <= 1)]
+
+        competitor_avg_price = None
+        if not competitors.empty:
+            competitor_avg_price = round(competitors['price'].mean(), 2)
+
+        minimum_price_suggestion = None
+        if competitor_avg_price and prediction > competitor_avg_price:
+            minimum_price_suggestion = competitor_avg_price
+
+        review_count = property_data['number_of_reviews'].values[0]
+        availability = property_data['availability_365'].values[0]
+        host_response_rate = property_data['host_response_rate'].values[0]
+
+        superhost_score = 0
+        if host_response_rate:
+            superhost_score += (host_response_rate / 100) * 2
+        if review_count:
+            superhost_score += min(review_count / 100, 2)
+        if availability:
+            superhost_score += (availability / 365) * 2
+        superhost_score = round(superhost_score, 2)
+
+        professional_advice = "Performansınız iyi gözüküyor, devam edin!"
+        if competitor_avg_price and prediction > competitor_avg_price:
+            professional_advice = "Fiyatınız rakiplerin ortalamasının üzerinde. Erken rezervasyon almak için fiyatı düşürebilirsiniz."
+
+        response = {
+            'prediction': round(float(prediction), 2),
+            'district': str(property_data['geo_cluster'].values[0]) if 'geo_cluster' in property_data else None,
+            'accommodates': accommodates,
+            'latitude': lat,
+            'longitude': lon,
+            'competitor_avg_price': competitor_avg_price,
+            'minimum_price_suggestion': minimum_price_suggestion,
+            'superhost_score': superhost_score,
+            'professional_advice': professional_advice
+        }
+
+        return jsonify(response)
+
+    except Exception as e:
+        return jsonify({'error': f'İşlem sırasında hata oluştu: {str(e)}'}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5001)
