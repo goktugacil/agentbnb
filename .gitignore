@@ -1,0 +1,8 @@
+# macOS sistem dosyalarını yoksay
+.DS_Store
+
+# Python bytecode dosyalarını yoksay
+__pycache__/
+
+# Jupyter Notebook checkpoint dosyalarını yoksay
+.ipynb_checkpoints/
