@@ -6,3 +6,4 @@ __pycache__/
 
 # Jupyter Notebook checkpoint dosyalarını yoksay
 .ipynb_checkpoints/
+venv/
