@@ -1,12 +1,3 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": 2,
-   "id": "deab28df-88e8-4d6f-ab9d-081769be4597",
-   "metadata": {},
-   "outputs": [
-    {
      "name": "stdout",
      "output_type": "stream",
      "text": [
