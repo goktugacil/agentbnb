@@ -14,10 +14,8 @@ GOOGLE_SHEETS_CSV_URL = (
 
 model = joblib.load('price_model.pkl')
 
-# BURADA DEĞİŞİKLİK VAR!
 df = pd.read_csv(GOOGLE_SHEETS_CSV_URL, low_memory=False, decimal=',')
 
-# latitude/longitude sütunları sayısal olsun
 df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
 df['longitude'] = pd.to_numeric(df['longitude'], errors='coerce')
 
@@ -26,6 +24,18 @@ if 'id' not in df.columns:
     df.rename(columns={'index': 'id'}, inplace=True)
 
 model_features = model.get_booster().feature_names
+
+def get_location_comment(district):
+    """geo_cluster numarasına göre basit açıklama üretir."""
+    cluster_comments = {
+        '0': "turistler için çok cazip bir bölge.",
+        '1': "şehir merkezine yakın ve popüler bir alan.",
+        '2': "sessiz ve yerel bir mahalle.",
+        '3': "şehir dışına yakın, daha sakin bir bölge.",
+        '4': "turist yoğunluğu az, yerel yaşam odaklı bir mahalle.",
+        '5': "denize yakın konumu ile dikkat çeken bir alan.",
+    }
+    return cluster_comments.get(str(district), "konum bilgisi güncelleniyor.")
 
 @app.route('/get_property', methods=['GET'])
 def get_property():
@@ -46,7 +56,7 @@ def get_property():
         features = features.apply(pd.to_numeric, errors='coerce')
 
         prediction = model.predict(features)[0]
-        prediction_real = np.expm1(prediction)  # 🔥 Burada log dönüşümünü açıyoruz
+        prediction_real = np.expm1(prediction)
 
         district = str(prop['geo_cluster'].iloc[0]) if 'geo_cluster' in prop else None
         accommodates = int(prop['accommodates'].iloc[0])
@@ -68,6 +78,9 @@ def get_property():
 
         professional_advice = "Performansınız iyi gözüküyor, devam edin!"
 
+        # 🎯 Konum açıklaması burada ekleniyor
+        location_comment = get_location_comment(district)
+
         return jsonify({
             'prediction': round(float(prediction_real), 2),
             'district': district,
@@ -75,7 +88,8 @@ def get_property():
             'latitude': latitude,
             'longitude': longitude,
             'superhost_score': superhost_score,
-            'professional_advice': professional_advice
+            'professional_advice': professional_advice,
+            'location_comment': location_comment
         })
 
     except Exception as e:
