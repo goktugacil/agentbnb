@@ -41,6 +41,8 @@ def get_location_comment(district):
 def get_property():
     try:
         property_id = request.args.get('id', type=int)
+        print(f"İstek alındı! ID: {property_id}")  # ✨ Log eklendi
+
         if property_id is None:
             return jsonify({'error': 'Geçerli bir id parametresi sağlayın.'}), 400
 
