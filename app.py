@@ -13,7 +13,9 @@ GOOGLE_SHEETS_CSV_URL = (
 )
 
 model = joblib.load('price_model.pkl')
-df = pd.read_csv(GOOGLE_SHEETS_CSV_URL, low_memory=False)
+
+# BURADA DEĞİŞİKLİK VAR!
+df = pd.read_csv(GOOGLE_SHEETS_CSV_URL, low_memory=False, decimal=',')
 
 # latitude/longitude sütunları sayısal olsun
 df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
