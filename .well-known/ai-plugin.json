@@ -1,0 +1,18 @@
+{
+    "schema_version": "v1",
+    "name_for_human": "AgentBnB",
+    "name_for_model": "agentbnb",
+    "description_for_human": "Airbnb ev sahiplerine tahmini fiyat ve Superhost analizi sunar.",
+    "description_for_model": "Airbnb ev ID'si ile tahmini fiyat ve Superhost skoru veren bir hizmet.",
+    "auth": {
+      "type": "none"
+    },
+    "api": {
+      "type": "openapi",
+      "url": "https://agentbnb.onrender.com/openapi.yaml",
+      "is_user_authenticated": false
+    },
+    "logo_url": "https://agentbnb.onrender.com/logo.png",
+    "contact_email": "destek@agentbnb.com",
+    "legal_info_url": "https://agentbnb.com/legal"
+  }
