@@ -39,6 +39,32 @@ def get_location_comment(district):
     }
     return cluster_comments.get(str(district), "konum bilgisi güncelleniyor.")
 
+def calculate_superhost_status(row):
+    """
+    Airbnb'nin kriterlerine göre Superhost olup olmadığını tahmin eder.
+    """
+    rating = row.get('review_scores_rating', None)
+    num_reviews = row.get('number_of_reviews', None)
+    availability = row.get('availability_365', None)
+
+    is_superhost = False
+    strategies = []
+
+    if pd.isna(rating) or pd.isna(num_reviews) or pd.isna(availability):
+        return is_superhost, strategies
+
+    if rating >= 4.8 and num_reviews >= 10 and availability >= 200:
+        is_superhost = True
+    else:
+        if rating < 4.8:
+            strategies.append("Misafir yorumlarını iyileştirerek genel puanınızı 4.8 üzerine çıkarın.")
+        if num_reviews < 10:
+            strategies.append("Daha fazla rezervasyon alarak en az 10 yorum toplayın.")
+        if availability < 200:
+            strategies.append("Ev müsaitlik günlerinizi artırarak daha fazla rezervasyon fırsatı yaratın.")
+
+    return is_superhost, strategies
+
 @app.route('/get_property', methods=['GET'])
 def get_property():
     try:
@@ -67,28 +93,13 @@ def get_property():
         latitude = float(prop['latitude'].iloc[0])
         longitude = float(prop['longitude'].iloc[0])
 
-        review_count = prop['number_of_reviews'].iloc[0]
-        availability = prop['availability_365'].iloc[0]
-        host_response_rate = prop.get('host_response_rate', pd.Series([0])).iloc[0]
+        # Yeni Superhost hesaplaması
+        is_superhost, strategies = calculate_superhost_status(prop.iloc[0])
 
-        # Superhost skor % üzerinden normalize ediliyor
-        superhost_score = 0
-        if host_response_rate:
-            superhost_score += host_response_rate * 0.4
-        if review_count:
-            superhost_score += min(review_count, 100) * 0.3
-        if availability:
-            superhost_score += (availability / 365) * 30
-        superhost_score = min(superhost_score, 100)
-        superhost_score = round(superhost_score, 2)
-
-        # Superhost yorumu
-        if superhost_score >= 80:
-            superhost_comment = "⭐ Tebrikler! Superhost potansiyeline çok yakınsınız!"
-        elif superhost_score >= 50:
-            superhost_comment = "😊 İyi gidiyorsunuz! Birkaç küçük iyileştirme ile Superhost olabilirsiniz."
+        if is_superhost:
+            superhost_comment = "⭐ Tebrikler! Şu anda Superhostsunuz!"
         else:
-            superhost_comment = "🛠️ Daha fazla yorum ve hızlı cevaplarla Superhost olabilirsiniz."
+            superhost_comment = "🛠️ Henüz Superhost değilsiniz. İşte geliştirme önerileriniz:"
 
         professional_advice = "Performansınız iyi gözüküyor, devam edin!"
         location_comment = get_location_comment(district)
@@ -99,8 +110,8 @@ def get_property():
             'accommodates': accommodates,
             'latitude': latitude,
             'longitude': longitude,
-            'superhost_score': superhost_score,
             'superhost_comment': superhost_comment,
+            'strategies': strategies,
             'professional_advice': professional_advice,
             'location_comment': location_comment
         })
