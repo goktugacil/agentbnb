@@ -28,7 +28,6 @@ if 'id' not in df.columns:
 model_features = model.get_booster().feature_names
 
 def get_location_comment(district):
-    """geo_cluster numarasına göre açıklama üretir."""
     cluster_comments = {
         '0': "turistler için çok cazip bir bölge.",
         '1': "şehir merkezine yakın ve popüler bir alan.",
@@ -40,10 +39,6 @@ def get_location_comment(district):
     return cluster_comments.get(str(district), "konum bilgisi güncelleniyor.")
 
 def calculate_superhost_status(row):
-    """
-    Airbnb'nin kriterlerine göre Superhost olup olmadığını tahmin eder.
-    Tür dönüşümü ile daha güvenli hale getirildi.
-    """
     try:
         rating = float(row.get('review_scores_rating', 0))
     except (ValueError, TypeError):
@@ -66,13 +61,66 @@ def calculate_superhost_status(row):
         is_superhost = True
     else:
         if rating < 4.8:
-            strategies.append("Misafir yorumlarını iyileştirerek genel puanınızı 4.8 üzerine çıkarın.")
+            strategies.append("Misafir yorumlarınızı iyileştirerek genel puanınızı 4.8 üzerine çıkarın.")
         if num_reviews < 10:
             strategies.append("Daha fazla rezervasyon alarak en az 10 yorum toplayın.")
         if availability < 200:
             strategies.append("Ev müsaitlik günlerinizi artırarak daha fazla rezervasyon fırsatı yaratın.")
 
     return is_superhost, strategies
+
+def generate_criteria_scores(row):
+    scores = []
+
+    try:
+        response_rate = float(row.get('host_response_rate', 0))
+    except:
+        response_rate = 0
+    rr_score = min(int(response_rate), 100)
+    scores.append({
+        "title": "Cevap Süresi",
+        "score": rr_score,
+        "status": "İyi" if rr_score >= 80 else "Düşük" if rr_score < 50 else "Orta",
+        "advice": "Süperhost olmak için %90 üstü cevap oranını hedefleyin."
+    })
+
+    try:
+        num_reviews = int(row.get('number_of_reviews', 0))
+    except:
+        num_reviews = 0
+    review_score = min(num_reviews, 100)
+    scores.append({
+        "title": "Yorum Sayısı",
+        "score": review_score,
+        "status": "İyi" if review_score >= 50 else "Düşük" if review_score < 10 else "Orta",
+        "advice": "Daha fazla yorum almak için rezervasyon sonrası değerlendirme isteyin."
+    })
+
+    try:
+        rating = float(row.get('review_scores_rating', 0))
+    except:
+        rating = 0
+    rating_score = int((rating / 5) * 100)
+    scores.append({
+        "title": "Genel Değerlendirme",
+        "score": rating_score,
+        "status": "Harika" if rating >= 4.8 else "Düşük" if rating < 4.5 else "Orta",
+        "advice": "Misafir deneyimini iyileştirerek genel puanı artırabilirsiniz."
+    })
+
+    try:
+        availability = int(row.get('availability_365', 0))
+    except:
+        availability = 0
+    avail_score = min(int((availability / 365) * 100), 100)
+    scores.append({
+        "title": "Yıllık Müsaitlik",
+        "score": avail_score,
+        "status": "Harika" if avail_score >= 80 else "Düşük" if avail_score < 40 else "Orta",
+        "advice": "Müsaitlik süresini artırmak, rezervasyon alma şansınızı yükseltir."
+    })
+
+    return scores
 
 @app.route('/get_property', methods=['GET'])
 def get_property():
@@ -102,8 +150,8 @@ def get_property():
         latitude = float(prop['latitude'].iloc[0])
         longitude = float(prop['longitude'].iloc[0])
 
-        # Superhost durumu hesaplama
         is_superhost, strategies = calculate_superhost_status(prop.iloc[0])
+        criteria_scores = generate_criteria_scores(prop.iloc[0])
 
         if is_superhost:
             superhost_comment = "⭐ Tebrikler! Şu anda Superhostsunuz!"
@@ -121,6 +169,7 @@ def get_property():
             'longitude': longitude,
             'superhost_comment': superhost_comment,
             'strategies': strategies,
+            'criteria_scores': criteria_scores,
             'professional_advice': professional_advice,
             'location_comment': location_comment
         })
