@@ -42,16 +42,25 @@ def get_location_comment(district):
 def calculate_superhost_status(row):
     """
     Airbnb'nin kriterlerine göre Superhost olup olmadığını tahmin eder.
+    Tür dönüşümü ile daha güvenli hale getirildi.
     """
-    rating = row.get('review_scores_rating', None)
-    num_reviews = row.get('number_of_reviews', None)
-    availability = row.get('availability_365', None)
+    try:
+        rating = float(row.get('review_scores_rating', 0))
+    except (ValueError, TypeError):
+        rating = 0
+
+    try:
+        num_reviews = int(row.get('number_of_reviews', 0))
+    except (ValueError, TypeError):
+        num_reviews = 0
+
+    try:
+        availability = int(row.get('availability_365', 0))
+    except (ValueError, TypeError):
+        availability = 0
 
     is_superhost = False
     strategies = []
-
-    if pd.isna(rating) or pd.isna(num_reviews) or pd.isna(availability):
-        return is_superhost, strategies
 
     if rating >= 4.8 and num_reviews >= 10 and availability >= 200:
         is_superhost = True
@@ -93,7 +102,7 @@ def get_property():
         latitude = float(prop['latitude'].iloc[0])
         longitude = float(prop['longitude'].iloc[0])
 
-        # Yeni Superhost hesaplaması
+        # Superhost durumu hesaplama
         is_superhost, strategies = calculate_superhost_status(prop.iloc[0])
 
         if is_superhost:
