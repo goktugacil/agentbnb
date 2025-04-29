@@ -71,14 +71,24 @@ def get_property():
         availability = prop['availability_365'].iloc[0]
         host_response_rate = prop.get('host_response_rate', pd.Series([0])).iloc[0]
 
+        # Superhost skor % üzerinden normalize ediliyor
         superhost_score = 0
         if host_response_rate:
-            superhost_score += (host_response_rate / 100) * 2
+            superhost_score += host_response_rate * 0.4
         if review_count:
-            superhost_score += min(review_count / 100, 2)
+            superhost_score += min(review_count, 100) * 0.3
         if availability:
-            superhost_score += (availability / 365) * 2
+            superhost_score += (availability / 365) * 30
+        superhost_score = min(superhost_score, 100)
         superhost_score = round(superhost_score, 2)
+
+        # Superhost yorumu
+        if superhost_score >= 80:
+            superhost_comment = "⭐ Tebrikler! Superhost potansiyeline çok yakınsınız!"
+        elif superhost_score >= 50:
+            superhost_comment = "😊 İyi gidiyorsunuz! Birkaç küçük iyileştirme ile Superhost olabilirsiniz."
+        else:
+            superhost_comment = "🛠️ Daha fazla yorum ve hızlı cevaplarla Superhost olabilirsiniz."
 
         professional_advice = "Performansınız iyi gözüküyor, devam edin!"
         location_comment = get_location_comment(district)
@@ -90,6 +100,7 @@ def get_property():
             'latitude': latitude,
             'longitude': longitude,
             'superhost_score': superhost_score,
+            'superhost_comment': superhost_comment,
             'professional_advice': professional_advice,
             'location_comment': location_comment
         })
@@ -97,7 +108,6 @@ def get_property():
     except Exception as e:
         return jsonify({'error': f'İşlem sırasında hata: {e}'}), 500
 
-# 🔥 Render.com uyumu: PORT ortam değişkeninden alınıyor
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
