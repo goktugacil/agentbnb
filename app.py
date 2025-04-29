@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import pandas as pd
 import joblib
 import numpy as np
-import math
+import os
 
 app = Flask(__name__)
 
@@ -12,8 +12,10 @@ GOOGLE_SHEETS_CSV_URL = (
     "pub?output=csv"
 )
 
+# Model yükleniyor
 model = joblib.load('price_model.pkl')
 
+# Veri çekiliyor
 df = pd.read_csv(GOOGLE_SHEETS_CSV_URL, low_memory=False, decimal=',')
 
 df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
@@ -26,7 +28,7 @@ if 'id' not in df.columns:
 model_features = model.get_booster().feature_names
 
 def get_location_comment(district):
-    """geo_cluster numarasına göre basit açıklama üretir."""
+    """geo_cluster numarasına göre açıklama üretir."""
     cluster_comments = {
         '0': "turistler için çok cazip bir bölge.",
         '1': "şehir merkezine yakın ve popüler bir alan.",
@@ -41,7 +43,7 @@ def get_location_comment(district):
 def get_property():
     try:
         property_id = request.args.get('id', type=int)
-        print(f"İstek alındı! ID: {property_id}")  # ✨ Log eklendi
+        print(f"İstek alındı! ID: {property_id}")
 
         if property_id is None:
             return jsonify({'error': 'Geçerli bir id parametresi sağlayın.'}), 400
@@ -79,8 +81,6 @@ def get_property():
         superhost_score = round(superhost_score, 2)
 
         professional_advice = "Performansınız iyi gözüküyor, devam edin!"
-
-        # 🎯 Konum açıklaması burada ekleniyor
         location_comment = get_location_comment(district)
 
         return jsonify({
@@ -97,5 +97,7 @@ def get_property():
     except Exception as e:
         return jsonify({'error': f'İşlem sırasında hata: {e}'}), 500
 
+# 🔥 Render.com uyumu: PORT ortam değişkeninden alınıyor
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
